@@ -1,22 +1,28 @@
 import os
+
+import joblib
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import mean_squared_error
-import joblib
+from sklearn.model_selection import train_test_split
+
 
 class PricePredictor:
     """
     Класс для построения, обучения и использования модели прогнозирования цен.
 
     Атрибуты:
-        db_manager (DatabaseManager): Объект для взаимодействия с базой данных.
-        model (sklearn.base.BaseEstimator): Обученная модель машинного обучения.
+        db_manager (DatabaseManager):
+         Объект для взаимодействия с базой данных.
+        model (sklearn.base.BaseEstimator):
+         Обученная модель машинного обучения.
 
     Методы:
         preprocess_data(df): Предобработка данных.
-        train_model(): Обучение модели на данных из базы данных.
-        predict_price(input_data): Прогнозирование цены на основе входных данных.
+        train_model(): Обучение модели на данных из
+        базы данных.
+        predict_price(input_data): Прогнозирование цены на
+        основе входных данных.
         update_model(): Обучение и сохранение новой модели.
         load_model(): Загрузка обученной модели из файла.
     """
@@ -26,7 +32,8 @@ class PricePredictor:
         Инициализирует объект PricePredictor с заданным менеджером базы данных.
 
         Args:
-            db_manager (DatabaseManager): Объект для взаимодействия с базой данных.
+            db_manager (DatabaseManager): Объект для взаимодействия с
+            базой данных.
         """
         self.db_manager = db_manager
         self.model = None
@@ -116,7 +123,9 @@ class PricePredictor:
         df_train_features = df_train_processed.drop('price', axis=1)
 
         # Добавляем отсутствующие столбцы в df_input_processed
-        missing_cols = set(df_train_features.columns) - set(df_input_processed.columns)
+        missing_cols = (set(df_train_features.columns) -
+                        set(df_input_processed.columns)
+                        )
         for col in missing_cols:
             df_input_processed[col] = 0
         # Убираем лишние столбцы, которые отсутствуют в обучающих данных
@@ -139,7 +148,8 @@ class PricePredictor:
         Загружает обученную модель из файла, если он существует.
 
         Returns:
-            bool: True, если модель успешно загружена, False в противном случае.
+            bool: True, если модель успешно загружена, False в
+            противном случае.
         """
         if os.path.exists('price_model.pkl'):
             self.model = joblib.load('price_model.pkl')

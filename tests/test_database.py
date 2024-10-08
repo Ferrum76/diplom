@@ -32,7 +32,8 @@ class TestDatabaseManager(unittest.TestCase):
     def test_create_tables(self):
         # Проверка, что таблица создана
         cursor = self.db_manager.conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='product_data'")
+        cursor.execute("""SELECT name FROM sqlite_master WHERE type='table'
+        AND name='product_data'""")
         table = cursor.fetchone()
         self.assertIsNotNone(table)
         self.assertEqual(table[0], 'product_data')
