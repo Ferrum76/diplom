@@ -1,35 +1,77 @@
+import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import mean_squared_error
 import joblib
 
-
 class PricePredictor:
-    """Класс для построения и обновления модели прогнозирования цен."""
+    """
+    Класс для построения, обучения и использования модели прогнозирования цен.
+
+    Атрибуты:
+        db_manager (DatabaseManager): Объект для взаимодействия с базой данных.
+        model (sklearn.base.BaseEstimator): Обученная модель машинного обучения.
+
+    Методы:
+        preprocess_data(df): Предобработка данных.
+        train_model(): Обучение модели на данных из базы данных.
+        predict_price(input_data): Прогнозирование цены на основе входных данных.
+        update_model(): Обучение и сохранение новой модели.
+        load_model(): Загрузка обученной модели из файла.
+    """
 
     def __init__(self, db_manager):
+        """
+        Инициализирует объект PricePredictor с заданным менеджером базы данных.
+
+        Args:
+            db_manager (DatabaseManager): Объект для взаимодействия с базой данных.
+        """
         self.db_manager = db_manager
         self.model = None
 
     def preprocess_data(self, df):
-        """Предобработка данных."""
+        """
+        Выполняет предобработку данных:
+        - Удаление строк с пропущенными значениями.
+        - Преобразование текстовых данных в нижний регистр.
+        - Кодирование категориальных признаков с помощью One-Hot Encoding.
+
+        Args:
+            df (pd.DataFrame): Данные для предобработки.
+
+        Returns:
+            pd.DataFrame: Предобработанные данные.
+        """
         required_columns = ['count', 'add_cost']
-        # Проверяем, какие столбцы присутствуют в данных
-        available_columns = df.columns.tolist()
-        subset_columns = [col for col in required_columns if col in available_columns]
         # Удаляем строки с пропущенными значениями в обязательных столбцах
-        df = df.dropna(subset=subset_columns)
+        df = df.dropna(subset=required_columns)
         categorical_cols = ['company', 'product']
+        # Приводим текстовые данные к строковому типу и нижнему регистру
+        for col in categorical_cols:
+            if col in df.columns:
+                df[col] = df[col].astype(str).str.lower()
+        # Применяем One-Hot Encoding к категориальным признакам
         df = pd.get_dummies(df, columns=categorical_cols)
         return df
 
     def train_model(self):
-        """Обучение модели на данных из базы данных."""
+        """
+        Обучает модель на данных из базы данных.
+
+        Процесс включает:
+        - Получение данных из базы данных.
+        - Предобработку данных.
+        - Разделение на обучающую и тестовую выборки.
+        - Обучение модели.
+        - Оценку качества модели.
+        """
         print("Получение данных из базы данных для обучения модели...")
         df = self.db_manager.fetch_data()
         df_processed = self.preprocess_data(df)
 
+        # Разделение данных на признаки и целевую переменную
         X = df_processed.drop(['price'], axis=1)
         y = df_processed['price']
 
@@ -55,7 +97,15 @@ class PricePredictor:
         print(feature_importances)
 
     def predict_price(self, input_data):
-        """Прогнозирование цены на основе входных данных."""
+        """
+        Прогнозирует цену на основе входных данных.
+
+        Args:
+            input_data (dict): Словарь с данными для прогнозирования.
+
+        Returns:
+            float: Прогнозируемая цена.
+        """
         print("Предобработка введенных данных...")
         df_input = pd.DataFrame([input_data])
         df_input_processed = self.preprocess_data(df_input)
@@ -77,12 +127,24 @@ class PricePredictor:
         return prediction[0]
 
     def update_model(self):
-        """Обновление модели с новыми данными."""
+        """
+        Обновляет модель с новыми данными и сохраняет её в файл.
+        """
         self.train_model()
         joblib.dump(self.model, 'price_model.pkl')
         print("Модель сохранена в 'price_model.pkl'.")
 
     def load_model(self):
-        """Загрузка модели из файла."""
-        self.model = joblib.load('price_model.pkl')
-        print("Модель загружена из 'price_model.pkl'.")
+        """
+        Загружает обученную модель из файла, если он существует.
+
+        Returns:
+            bool: True, если модель успешно загружена, False в противном случае.
+        """
+        if os.path.exists('price_model.pkl'):
+            self.model = joblib.load('price_model.pkl')
+            print("Модель загружена из 'price_model.pkl'.")
+            return True
+        else:
+            print("Файл модели не найден. Необходимо обучить модель.")
+            return False
